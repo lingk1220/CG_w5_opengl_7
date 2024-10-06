@@ -8,6 +8,8 @@
 #include <math.h>
 #include <vector>
 
+#define MAXSHAPECOUNT 10
+
 //--- 필요한 헤더파일 선언
 //--- 아래 5개 함수는 사용자 정의 함수 임
 void make_vertexShaders();
@@ -17,17 +19,21 @@ GLvoid drawScene();
 GLvoid Reshape(int w, int h);
 char* filetobuf(const char* file);
 GLvoid init_buffer();
-void timer(int value);
+void timer_move(int value);
 void draw_shapes();
 void input_rect(GLfloat* input_pos);
 float random_float(float low, float high);
 GLvoid Keyboard(unsigned char key, int x, int y);
+void spckeycallback(int key, int x, int y);
 void Mouse(int button, int state, int x, int y);
 void clamp_pos(GLfloat* input_pos);
 void input_shape(char cmd, GLfloat* input_pos);
 void input_tri(GLfloat* input_pos);
 void input_line(GLfloat* input_pos);
 void input_dot(GLfloat* input_pos);
+void specialKeyUp(int key, int x, int y);
+void random_shape();
+void move_shape();
 
 //--- 필요한 변수 선언
 GLint width, height;
@@ -37,17 +43,20 @@ GLuint fragmentShader; //--- 프래그먼트 세이더 객체
 GLuint VBO_dot, VBO_line, VBO_tri, VBO_rect, EBO;
 std::vector<GLuint> VAO;
 std::vector<GLuint> VBO;
-float offset = 0;
 char cmd = 0;
 int shape[4] = { GL_POINTS, GL_LINES,  GL_TRIANGLES , GL_TRIANGLES };
+int rnd_shape = 0, rnd_index = 0;
+int dir = 0;
+
+int shape_counts[4] = { 0, };
+int shape_count = 0;
+int iskeydown = 0;
+
 std::vector<std::vector<unsigned int>> index = {
 	{}, {}, {}, {}
 };
 
-const GLfloat colors[3][3] = { // 삼각형 꼭지점 색상
-{1.0, 0.0, 0.0},
-{0.0, 1.0, 0.0},
-{0.0, 0.0, 1.0} };
+
 
 std::vector <std::vector<float >> posList = { {}, {}, {},
 	{}
@@ -78,13 +87,25 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Keyboard);
 	glutMouseFunc(Mouse);
+	glutSpecialFunc(spckeycallback);
+	glutSpecialUpFunc(specialKeyUp);
 	init_buffer();
 	glutMainLoop();
 }
 
-void timer(int value) {
+void reset() {
+	for(int i = 0; i < 4; i++) shape_counts[i] = 0;
+	shape_count = 0;
+	iskeydown = 0;
+	index.clear();
+	index = { {}, {}, {}, {} };
+	posList.clear();
+	posList = { {}, {}, {}, {} };
+}
+
+void timer_move(int value) {
 	glutPostRedisplay();
-	glutTimerFunc(1000, timer, 1);
+	glutTimerFunc(100, timer_move, 1);
 }
 
 GLvoid Keyboard(unsigned char key, int x, int y)
@@ -99,9 +120,46 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case 'q':
 		glutLeaveMainLoop();
 		break;
+
+	case 'c':
+		reset();
+		break;
 	}
 	glutPostRedisplay();
 }
+
+void spckeycallback(int key, int x, int y) {
+	if (!iskeydown) {
+		switch (key) {
+		case GLUT_KEY_LEFT:
+			dir = 2;
+			break;
+
+		case GLUT_KEY_RIGHT:
+			dir = 0;
+			break;
+
+		case GLUT_KEY_UP:
+			dir = 3;
+			break;
+
+		case GLUT_KEY_DOWN:
+			dir = 1;
+			break;
+		default:
+			dir = -1;
+		}
+		random_shape();
+		iskeydown = 1;
+	}
+	move_shape();
+}
+
+void specialKeyUp(int key, int x, int y) {
+	iskeydown = 0;
+}
+
+
 
 void Mouse(int button, int state, int x, int y)
 {
@@ -250,6 +308,7 @@ void draw_shapes() {
 }
 
 void input_shape(char cmd, GLfloat* input_pos) {
+	if (shape_count >= MAXSHAPECOUNT) return;
 	switch (cmd) {
 	case 'p':
 		input_dot(input_pos);
@@ -266,6 +325,7 @@ void input_shape(char cmd, GLfloat* input_pos) {
 		input_rect(input_pos);
 		break;
 	}
+	shape_count++;
 }
 
 void input_dot(GLfloat* input_pos) {
@@ -298,6 +358,7 @@ void input_dot(GLfloat* input_pos) {
 	index[3].push_back(lastindex + 2);
 	index[3].push_back(lastindex + 3);
 
+	shape_counts[3]++;
 }
 
 void input_line(GLfloat* input_pos) {
@@ -323,12 +384,12 @@ void input_line(GLfloat* input_pos) {
 
 	index[1].push_back(lastindex);
 	index[1].push_back(lastindex + 1);
-
+	shape_counts[1]++;
 }
 
 void input_tri(GLfloat* input_pos) {
 	float lx[3] = { 0, -0.5, 0.5};
-	float ly[3] = { 1, -0.5, -0.5};
+	float ly[3] = { 0.5, -0.5, -0.5};
 
 	float radius = 0.5f;
 
@@ -350,7 +411,7 @@ void input_tri(GLfloat* input_pos) {
 	index[2].push_back(lastindex);
 	index[2].push_back(lastindex + 1);
 	index[2].push_back(lastindex + 2);
-
+	shape_counts[2]++;
 }
 
 void input_rect(GLfloat* input_pos) {
@@ -381,9 +442,33 @@ void input_rect(GLfloat* input_pos) {
 	index[3].push_back(lastindex + 1);
 	index[3].push_back(lastindex + 2);
 	index[3].push_back(lastindex + 3);
-
+	shape_counts[3]++;
 }
 
 float random_float(float low, float high) {
 	return low + (float)rand() * (high - low) / RAND_MAX;
+}
+
+void random_shape() {
+	rnd_shape = rand() % 4;
+
+	while (shape_counts[rnd_shape] == 0) {
+		rnd_shape = rand() % 4;
+	}
+	rnd_index = rand() % shape_counts[rnd_shape];
+
+}
+
+void move_shape() {
+	if (dir == -1)return;
+	if (shape_count == 0) return;
+	int vertex_count[4] = { 4, 2, 3, 4 };
+	int dx[4] = { 1, 0, -1, 0 };
+	int dy[4] = { 0, -1, 0, 1 };
+	for (int i = 0; i < vertex_count[rnd_shape]; i++) {
+
+		posList[rnd_shape][6 * (rnd_index * vertex_count[rnd_shape] + i)] += dx[dir] * 0.01f;
+		posList[rnd_shape][6 * (rnd_index * vertex_count[rnd_shape] + i) + 1] += dy[dir] * 0.01f;
+	}
+	glutPostRedisplay();
 }
