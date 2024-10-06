@@ -24,6 +24,8 @@ float random_float(float low, float high);
 GLvoid Keyboard(unsigned char key, int x, int y);
 void Mouse(int button, int state, int x, int y);
 void clamp_pos(GLfloat* input_pos);
+void input_shape(char cmd, GLfloat* input_pos);
+void input_tri(GLfloat* input_pos);
 
 //--- 필요한 변수 선언
 GLint width, height;
@@ -34,14 +36,10 @@ GLuint VBO_dot, VBO_line, VBO_tri, VBO_rect, EBO;
 std::vector<GLuint> VAO;
 std::vector<GLuint> VBO;
 float offset = 0;
-
+char cmd = 0;
 int shape[4] = { GL_POINTS, GL_LINES,  GL_TRIANGLES , GL_TRIANGLES };
 std::vector<std::vector<unsigned int>> index = {
-	{}, {}, {}, {
-0, 1, 3, // 첫 번째 삼각형
-1, 2, 3, // 두 번째 삼각형
-4, 5, 7,
-5, 6, 7 }
+	{}, {}, {}, {}
 };
 
 const GLfloat colors[3][3] = { // 삼각형 꼭지점 색상
@@ -58,8 +56,8 @@ std::vector <std::vector<float >> posList = { {}, {}, {},
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
 	srand((unsigned int)time(NULL));
-	width = 500;
-	height = 500;
+	width = 800;
+	height = 800;
 	//--- 윈도우 생성하기
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
@@ -90,15 +88,11 @@ void timer(int value) {
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case '1':
-		break;
-	case '2':
-		break;
-	case '3':
-		break;
-	case '4':
-		break;
+	case 'p':
+	case 'l':
+	case 't':
 	case 'r':
+		cmd = key;
 		break;
 	case 'q':
 		glutLeaveMainLoop();
@@ -113,7 +107,7 @@ void Mouse(int button, int state, int x, int y)
 	GLfloat input_pos[2] = { x, y };
 	clamp_pos(input_pos);
 	if (state == GLUT_DOWN) {
-		input_rect(input_pos);
+		input_shape(cmd, input_pos);
 		
 		glutPostRedisplay();
 	}
@@ -230,8 +224,9 @@ void init_buffer() {
 	for (int i = 0; i < 4; i++) {
 		glGenVertexArrays(1, &VAO[i]);
 		glGenBuffers(1, &VBO[i]);
-		glGenBuffers(1, &EBO);
+
 	}
+	glGenBuffers(1, &EBO);
 }
 
 void draw_shapes() {
@@ -252,8 +247,49 @@ void draw_shapes() {
 	}
 }
 
-void test() {
-	
+void input_shape(char cmd, GLfloat* input_pos) {
+	switch (cmd) {
+	case 'p':
+
+		break;
+	case 'l':
+		break;
+
+	case 't':
+		input_tri(input_pos);
+		break;
+
+	case 'r':
+		input_rect(input_pos);
+		break;
+	}
+}
+
+void input_tri(GLfloat* input_pos) {
+	float lx[3] = { 0, -0.5, 0.5};
+	float ly[3] = { 1, -0.5, -0.5};
+
+	float radius = 0.5f;
+
+	float r = random_float(0.3, 1);
+	float g = random_float(0.3, 1);
+	float b = random_float(0.3, 1);
+
+	int lastindex = index[2].size() / 3 * 3;
+
+	for (int i = 0; i < 3; i++) {
+		posList[2].push_back(input_pos[0] + radius / 2 * lx[i]);
+		posList[2].push_back(input_pos[1] + radius / 2 * ly[i]);
+		posList[2].push_back(0.0f);
+		posList[2].push_back(r);
+		posList[2].push_back(g);
+		posList[2].push_back(b);
+	}
+
+	index[2].push_back(lastindex);
+	index[2].push_back(lastindex + 1);
+	index[2].push_back(lastindex + 2);
+
 }
 
 void input_rect(GLfloat* input_pos) {
@@ -267,27 +303,26 @@ void input_rect(GLfloat* input_pos) {
 	float g = random_float(0.3, 1);
 	float b = random_float(0.3, 1);
 
-	int lastindex = index[2].size() / 6 * 4;
+	int lastindex = index[3].size() / 6 * 4;
 
 	for (int i = 0; i < 4; i++) {
-		posList[2].push_back(input_pos[0] + width / 2 * lx[i]);
-		posList[2].push_back(input_pos[1] + height / 2 * ly[i]);
-		posList[2].push_back(0.0f);
-		posList[2].push_back(r);
-		posList[2].push_back(g);
-		posList[2].push_back(b);
+		posList[3].push_back(input_pos[0] + width / 2 * lx[i]);
+		posList[3].push_back(input_pos[1] + height / 2 * ly[i]);
+		posList[3].push_back(0.0f);
+		posList[3].push_back(r);
+		posList[3].push_back(g);
+		posList[3].push_back(b);
 	}
 	
-	index[2].push_back(lastindex);
-	index[2].push_back(lastindex + 1);
-	index[2].push_back(lastindex + 2);
-	index[2].push_back(lastindex + 1);
-	index[2].push_back(lastindex + 2);
-	index[2].push_back(lastindex + 3);
+	index[3].push_back(lastindex);
+	index[3].push_back(lastindex + 1);
+	index[3].push_back(lastindex + 2);
+	index[3].push_back(lastindex + 1);
+	index[3].push_back(lastindex + 2);
+	index[3].push_back(lastindex + 3);
 
 }
 
 float random_float(float low, float high) {
-	std::cout << (float)rand() * (high - low) / RAND_MAX << "\n";
 	return low + (float)rand() * (high - low) / RAND_MAX;
 }
