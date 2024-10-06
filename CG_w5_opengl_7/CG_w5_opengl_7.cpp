@@ -19,7 +19,8 @@ char* filetobuf(const char* file);
 GLvoid init_buffer();
 void timer(int value);
 void draw_shapes();
-
+void input_rect();
+float random_float(float low, float high);
 //--- 필요한 변수 선언
 GLint width, height;
 GLuint shaderID; //--- 세이더 프로그램 이름
@@ -45,20 +46,14 @@ const GLfloat colors[3][3] = { // 삼각형 꼭지점 색상
 {0.0, 0.0, 1.0} };
 
 std::vector <std::vector<float >> posList = { {}, {}, {},
-	{1.0f, 1.0f, 0.0f, // 우측 상단
-1.0f, 0.0f, 0.0f, // 우측 하단
-0.0f, 0.0f, 0.0f, // 좌측 하단
-0.0f, 1.0f, 0.0f, // 좌측 상단
--0.5f, -0.5f, 0.0f,
--0.5f, -1.0f, 0.0f,
--1.0f, -1.0f, 0.0f,
--1.0f, -0.5f, 0.0f}
+	{}
 };
 
 
 //--- 메인 함수
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
+	srand((unsigned int)time(NULL));
 	width = 500;
 	height = 500;
 	//--- 윈도우 생성하기
@@ -78,6 +73,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
 	glutReshapeFunc(Reshape);
 	init_buffer();
+	input_rect();
 	glutMainLoop();
 }
 
@@ -187,17 +183,21 @@ char* filetobuf(const char* file)
 void init_buffer() {
 	VAO.assign(4, NULL);
 	VBO.assign(4, NULL);
+
+	for (int i = 0; i < 4; i++) {
+		glGenVertexArrays(1, &VAO[i]);
+		glGenBuffers(1, &VBO[i]);
+		glGenBuffers(1, &EBO);
+	}
 }
 
 void draw_shapes() {
 	for (int i = 0; i < 4; i++) {
 		if (posList.empty()) continue;
-		glGenVertexArrays(1, &VAO[i]);
-		glGenBuffers(1, &VBO[i]);
 		glBindVertexArray(VAO[i]);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
 		glBufferData(GL_ARRAY_BUFFER, posList[i].size() * sizeof(float), posList[i].data(), GL_STATIC_DRAW);
-		glGenBuffers(1, &EBO);
+
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, index[i].size() * sizeof(float), index[i].data(), GL_STATIC_DRAW);
 		std::cout << posList.size() << std::endl;
@@ -205,4 +205,46 @@ void draw_shapes() {
 		glEnableVertexAttribArray(0);
 		glDrawElements(shape[i], index[i].size(), GL_UNSIGNED_INT, 0);
 	}
+}
+
+void test() {
+	
+}
+
+void input_rect() {
+	float ox = random_float(-1, 1);
+	
+	float oy = random_float(-1, 1);
+	float width = random_float(0.3, 0.5);
+	float height = random_float(0.3, 0.5);
+	int lastindex = index[2].size();
+
+	posList[2].push_back(ox);
+	posList[2].push_back(oy);
+	posList[2].push_back(0.0f);
+
+	posList[2].push_back(ox + width);
+	posList[2].push_back(oy);
+	posList[2].push_back(0.0f);
+
+	posList[2].push_back(ox);
+	posList[2].push_back(oy + height);
+	posList[2].push_back(0.0f);
+
+	posList[2].push_back(ox + width);
+	posList[2].push_back(oy + height);
+	posList[2].push_back(0.0f);
+
+	
+	index[2].push_back(lastindex);
+	index[2].push_back(lastindex + 1);
+	index[2].push_back(lastindex + 2);
+	index[2].push_back(lastindex + 1);
+	index[2].push_back(lastindex + 2);
+	index[2].push_back(lastindex + 3);
+
+}
+
+float random_float(float low, float high) {
+	return low + rand() * (high - low) / RAND_MAX;
 }
