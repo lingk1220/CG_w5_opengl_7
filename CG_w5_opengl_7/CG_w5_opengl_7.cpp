@@ -73,19 +73,15 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
 	glutReshapeFunc(Reshape);
 	init_buffer();
-	input_rect();
+
+	glutTimerFunc(1000, timer, 1);
 	glutMainLoop();
 }
 
 void timer(int value) {
-	float randomvalue = ((float)(rand() % 256) - 128) / 128;
-	offset += randomvalue / 200.0f;
-	std::cout << sin(randomvalue) / 200.0f << std::endl;
-
-	int vertexOffsetLocation = glGetUniformLocation(shaderID, "offset");
-	glUniform1f(vertexOffsetLocation, offset);
+	input_rect();
 	glutPostRedisplay();
-	glutTimerFunc(10, timer, 1);
+	glutTimerFunc(1000, timer, 1);
 }
 
 void make_vertexShaders()
@@ -148,7 +144,7 @@ GLuint make_shaderProgram() {
 GLvoid drawScene() {
 	GLfloat rColor, gColor, bColor;
 	rColor = bColor = 0.0;
-	gColor = 1.0;
+	gColor = 0.0;
 	glClearColor(rColor, gColor, bColor, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glUseProgram(shaderID);
@@ -201,8 +197,10 @@ void draw_shapes() {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, index[i].size() * sizeof(float), index[i].data(), GL_STATIC_DRAW);
 		std::cout << posList.size() << std::endl;
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
 		glDrawElements(shape[i], index[i].size(), GL_UNSIGNED_INT, 0);
 	}
 }
@@ -212,29 +210,30 @@ void test() {
 }
 
 void input_rect() {
-	float ox = random_float(-1, 1);
-	
-	float oy = random_float(-1, 1);
+	float lx[4] = { 0, 1, 0, 1 };
+	float ly[4] = { 0, 0, 1, 1 };
+
+	float ox = random_float(-1.0, 1.0);
+	float oy = random_float(-1.0, 1.0);
+
+	std::cout << ox << " " << oy << "\n";
 	float width = random_float(0.3, 0.5);
 	float height = random_float(0.3, 0.5);
-	int lastindex = index[2].size();
 
-	posList[2].push_back(ox);
-	posList[2].push_back(oy);
-	posList[2].push_back(0.0f);
+	float r = random_float(0.3, 1);
+	float g = random_float(0.3, 1);
+	float b = random_float(0.3, 1);
 
-	posList[2].push_back(ox + width);
-	posList[2].push_back(oy);
-	posList[2].push_back(0.0f);
+	int lastindex = index[2].size() / 6 * 4;
 
-	posList[2].push_back(ox);
-	posList[2].push_back(oy + height);
-	posList[2].push_back(0.0f);
-
-	posList[2].push_back(ox + width);
-	posList[2].push_back(oy + height);
-	posList[2].push_back(0.0f);
-
+	for (int i = 0; i < 4; i++) {
+		posList[2].push_back(ox + width * lx[i]);
+		posList[2].push_back(oy + height * ly[i]);
+		posList[2].push_back(0.0f);
+		posList[2].push_back(r);
+		posList[2].push_back(g);
+		posList[2].push_back(b);
+	}
 	
 	index[2].push_back(lastindex);
 	index[2].push_back(lastindex + 1);
@@ -246,5 +245,6 @@ void input_rect() {
 }
 
 float random_float(float low, float high) {
-	return low + rand() * (high - low) / RAND_MAX;
+	std::cout << (float)rand() * (high - low) / RAND_MAX << "\n";
+	return low + (float)rand() * (high - low) / RAND_MAX;
 }
