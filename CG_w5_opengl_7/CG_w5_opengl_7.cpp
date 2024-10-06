@@ -19,8 +19,12 @@ char* filetobuf(const char* file);
 GLvoid init_buffer();
 void timer(int value);
 void draw_shapes();
-void input_rect();
+void input_rect(GLfloat* input_pos);
 float random_float(float low, float high);
+GLvoid Keyboard(unsigned char key, int x, int y);
+void Mouse(int button, int state, int x, int y);
+void clamp_pos(GLfloat* input_pos);
+
 //--- 필요한 변수 선언
 GLint width, height;
 GLuint shaderID; //--- 세이더 프로그램 이름
@@ -72,16 +76,59 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	//--- 세이더 프로그램 만들기
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
 	glutReshapeFunc(Reshape);
+	glutKeyboardFunc(Keyboard);
+	glutMouseFunc(Mouse);
 	init_buffer();
-
-	glutTimerFunc(1000, timer, 1);
 	glutMainLoop();
 }
 
 void timer(int value) {
-	input_rect();
 	glutPostRedisplay();
 	glutTimerFunc(1000, timer, 1);
+}
+
+GLvoid Keyboard(unsigned char key, int x, int y)
+{
+	switch (key) {
+	case '1':
+		break;
+	case '2':
+		break;
+	case '3':
+		break;
+	case '4':
+		break;
+	case 'r':
+		break;
+	case 'q':
+		glutLeaveMainLoop();
+		break;
+	}
+	glutPostRedisplay();
+}
+
+void Mouse(int button, int state, int x, int y)
+{
+
+	GLfloat input_pos[2] = { x, y };
+	clamp_pos(input_pos);
+	if (state == GLUT_DOWN) {
+		input_rect(input_pos);
+		
+		glutPostRedisplay();
+	}
+	else {
+	}
+
+}
+
+void clamp_pos(GLfloat* input_pos) {
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	int viewport_width = viewport[2];
+	int viewport_height = viewport[3];
+	input_pos[0] = (input_pos[0] / viewport_width) * 2 - 1.0f;
+	input_pos[1] = -1 * ((input_pos[1] / viewport_height) * 2 - 1.0f);
 }
 
 void make_vertexShaders()
@@ -209,14 +256,10 @@ void test() {
 	
 }
 
-void input_rect() {
-	float lx[4] = { 0, 1, 0, 1 };
-	float ly[4] = { 0, 0, 1, 1 };
+void input_rect(GLfloat* input_pos) {
+	float lx[4] = { -1, -1, 1, 1 };
+	float ly[4] = { -1, 1, -1, 1 };
 
-	float ox = random_float(-1.0, 1.0);
-	float oy = random_float(-1.0, 1.0);
-
-	std::cout << ox << " " << oy << "\n";
 	float width = random_float(0.3, 0.5);
 	float height = random_float(0.3, 0.5);
 
@@ -227,8 +270,8 @@ void input_rect() {
 	int lastindex = index[2].size() / 6 * 4;
 
 	for (int i = 0; i < 4; i++) {
-		posList[2].push_back(ox + width * lx[i]);
-		posList[2].push_back(oy + height * ly[i]);
+		posList[2].push_back(input_pos[0] + width / 2 * lx[i]);
+		posList[2].push_back(input_pos[1] + height / 2 * ly[i]);
 		posList[2].push_back(0.0f);
 		posList[2].push_back(r);
 		posList[2].push_back(g);
