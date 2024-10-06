@@ -26,6 +26,8 @@ void Mouse(int button, int state, int x, int y);
 void clamp_pos(GLfloat* input_pos);
 void input_shape(char cmd, GLfloat* input_pos);
 void input_tri(GLfloat* input_pos);
+void input_line(GLfloat* input_pos);
+void input_dot(GLfloat* input_pos);
 
 //--- 필요한 변수 선언
 GLint width, height;
@@ -250,9 +252,10 @@ void draw_shapes() {
 void input_shape(char cmd, GLfloat* input_pos) {
 	switch (cmd) {
 	case 'p':
-
+		input_dot(input_pos);
 		break;
 	case 'l':
+		input_line(input_pos);
 		break;
 
 	case 't':
@@ -263,6 +266,64 @@ void input_shape(char cmd, GLfloat* input_pos) {
 		input_rect(input_pos);
 		break;
 	}
+}
+
+void input_dot(GLfloat* input_pos) {
+
+	float lx[4] = { -1, -1, 1, 1 };
+	float ly[4] = { -1, 1, -1, 1 };
+
+	float width = 0.01f;
+	float height = 0.01f;
+
+	float r = random_float(0.3, 1);
+	float g = random_float(0.3, 1);
+	float b = random_float(0.3, 1);
+
+	int lastindex = index[3].size() / 6 * 4;
+
+	for (int i = 0; i < 4; i++) {
+		posList[3].push_back(input_pos[0] + width / 2 * lx[i]);
+		posList[3].push_back(input_pos[1] + height / 2 * ly[i]);
+		posList[3].push_back(0.0f);
+		posList[3].push_back(r);
+		posList[3].push_back(g);
+		posList[3].push_back(b);
+	}
+
+	index[3].push_back(lastindex);
+	index[3].push_back(lastindex + 1);
+	index[3].push_back(lastindex + 2);
+	index[3].push_back(lastindex + 1);
+	index[3].push_back(lastindex + 2);
+	index[3].push_back(lastindex + 3);
+
+}
+
+void input_line(GLfloat* input_pos) {
+	float lx[2] = { -1, 1};
+	float ly[2] = {0, 0};
+
+	float lenghth = 0.3f;
+
+	float r = random_float(0.3, 1);
+	float g = random_float(0.3, 1);
+	float b = random_float(0.3, 1);
+
+	int lastindex = index[1].size() / 2 * 2;
+
+	for (int i = 0; i < 2; i++) {
+		posList[1].push_back(input_pos[0] + lenghth / 2 * lx[i]);
+		posList[1].push_back(input_pos[1] + lenghth / 2 * ly[i]);
+		posList[1].push_back(0.0f);
+		posList[1].push_back(r);
+		posList[1].push_back(g);
+		posList[1].push_back(b);
+	}
+
+	index[1].push_back(lastindex);
+	index[1].push_back(lastindex + 1);
+
 }
 
 void input_tri(GLfloat* input_pos) {
@@ -296,8 +357,8 @@ void input_rect(GLfloat* input_pos) {
 	float lx[4] = { -1, -1, 1, 1 };
 	float ly[4] = { -1, 1, -1, 1 };
 
-	float width = random_float(0.3, 0.5);
-	float height = random_float(0.3, 0.5);
+	float width = 0.2f;
+	float height = 0.2f;
 
 	float r = random_float(0.3, 1);
 	float g = random_float(0.3, 1);
